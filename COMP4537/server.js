@@ -1,48 +1,40 @@
-import http from "http";
-import { readFile, writeFile, mkdir } from "fs/promises";
-import { existsSync } from "fs";
-import { URL } from "url";
-import path from "path";
+import WriteApp from './writeFile.js';
+import ReadApp from './readFile.js';
+import http from 'http';
+import url from 'url';
+import path from 'path';
 
-const __dirname = new URL(".", import.meta.url).pathname;
-const filePath = path.join(__dirname, "file.txt");
+const PORT = 3000;
 
-const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-
-  // WRITE
-  if (url.pathname === "/COMP4537/labs/3/writeFile/") {
-    const text = url.searchParams.get("text");
-
-    if (!text) {
-      res.writeHead(400, { "Content-Type": "text/plain" });
-      return res.end("Missing text");
-    }
-
-    await writeFile(filePath, text + "\n", { flag: "a" });
-
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    return res.end("Written");
+class Server {
+  constructor() {
+    this.writeApp = new WriteApp();
+    this.readApp = new ReadApp();
+    this.server = http.createServer(this.requestListener.bind(this));
   }
 
-  // READ
-  if (url.pathname === "/COMP4537/labs/3/readFile/file.txt") {
-    if (!existsSync(filePath)) {
-      res.writeHead(404, { "Content-Type": "text/plain" });
-      return res.end("file.txt not found");
-    }
+  async requestListener(req, res) {
+    const parsedUrl = url.parse(req.url, true);
+    const pathname = parsedUrl.pathname;
 
-    const data = await readFile(filePath, "utf-8");
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    return res.end(data);
+    console.log(pathname);
+    if (pathname.includes('/COMP4537/labs/3/writeFile/')) {
+      await this.writeApp.handleWrite(req, res);
+    } else if (pathname.includes('/COMP4537/labs/3/readFile/')) {
+      console.log("readFile request received");
+      await this.readApp.handleRead(req, res);
+    } else {
+      res.writeHead(404, { "Content-Type": "text/html" });
+      res.end("Not Found");
+    }
   }
 
-  res.writeHead(404);
-  res.end("Not Found");
-});
+  start() {
+    this.server.listen(PORT, () => {
+      console.log(`Server is running on http://localhost:${PORT}`);
+    });
+  }
+}
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
+const server = new Server();
+server.start();   
