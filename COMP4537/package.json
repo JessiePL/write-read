@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "write": "node labs/3/writeFile.js",
-    "read": "node labs/3/readFile.js"
+    "start":"node server.js"
   }
 }
 
